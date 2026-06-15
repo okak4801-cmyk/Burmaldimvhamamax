@@ -1,15 +1,8 @@
--- MM2 Advanced Script с GUI и Fling (для Delta Executor)
+-- MM2 Mobile Optimized Script с Draggable Menu
 local Players = game:GetService("Players")
 local LocalPlayer = Players.LocalPlayer
-local Workspace = game:GetService("Workspace")
 local RunService = game:GetService("RunService")
 local CoreGui = game:GetService("CoreGui")
-local TweenService = game:GetService("TweenService")
-local UserInputService = game:GetService("UserInputService")
-
-local ESPFolder = Instance.new("Folder")
-ESPFolder.Name = "MM2_ESP"
-ESPFolder.Parent = CoreGui
 
 -- Настройки
 local Settings = {
@@ -20,99 +13,139 @@ local Settings = {
     SelectedPlayer = nil
 }
 
--- Создаём GUI
+-- GUI
 local ScreenGui = Instance.new("ScreenGui")
-ScreenGui.Name = "MM2_Menu"
+ScreenGui.Name = "MM2_Mobile_Menu"
 ScreenGui.ResetOnSpawn = false
 ScreenGui.Parent = CoreGui
 
 local Frame = Instance.new("Frame")
-Frame.Size = UDim2.new(0, 300, 0, 400)
-Frame.Position = UDim2.new(0.5, -150, 0.5, -200)
-Frame.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+Frame.Size = UDim2.new(0, 280, 0, 420)  -- чуть меньше для мобилы
+Frame.Position = UDim2.new(0.5, -140, 0.3, 0)  -- выше на экране
+Frame.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
 Frame.BorderSizePixel = 0
 Frame.Parent = ScreenGui
 
+-- Закругления
+local UICorner = Instance.new("UICorner")
+UICorner.CornerRadius = UDim.new(0, 12)
+UICorner.Parent = Frame
+
 local Title = Instance.new("TextLabel")
-Title.Size = UDim2.new(1, 0, 0, 50)
-Title.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
-Title.Text = "MM2 Script by Grok"
+Title.Size = UDim2.new(1, 0, 0, 45)
+Title.BackgroundColor3 = Color3.fromRGB(15, 15, 15)
+Title.Text = "MM2 Mobile Script"
 Title.TextColor3 = Color3.new(1, 1, 1)
 Title.TextScaled = true
 Title.Font = Enum.Font.GothamBold
 Title.Parent = Frame
 
--- Функция для создания Toggle
-local function createToggle(parent, text, default, callback)
-    local toggleFrame = Instance.new("Frame")
-    toggleFrame.Size = UDim2.new(1, -20, 0, 40)
-    toggleFrame.BackgroundTransparency = 1
-    toggleFrame.Parent = parent
-    
-    local label = Instance.new("TextLabel")
-    label.Size = UDim2.new(0.7, 0, 1, 0)
-    label.BackgroundTransparency = 1
-    label.Text = text
-    label.TextColor3 = Color3.new(1,1,1)
-    label.TextXAlignment = Enum.TextXAlignment.Left
-    label.Parent = toggleFrame
-    
-    local button = Instance.new("TextButton")
-    button.Size = UDim2.new(0.3, 0, 0.8, 0)
-    button.Position = UDim2.new(0.7, 0, 0.1, 0)
-    button.BackgroundColor3 = default and Color3.fromRGB(0, 170, 0) or Color3.fromRGB(170, 0, 0)
-    button.Text = default and "ON" or "OFF"
-    button.TextColor3 = Color3.new(1,1,1)
-    button.Parent = toggleFrame
-    
-    button.MouseButton1Click:Connect(function()
-        default = not default
-        button.BackgroundColor3 = default and Color3.fromRGB(0, 170, 0) or Color3.fromRGB(170, 0, 0)
-        button.Text = default and "ON" or "OFF"
-        callback(default)
-    end)
-    return button
+local UICornerTitle = Instance.new("UICorner")
+UICornerTitle.CornerRadius = UDim.new(0, 12)
+UICornerTitle.Parent = Title
+
+-- Drag функция (очень важна для мобилы)
+local dragging, dragInput, dragStart, startPos
+
+local function updateDrag(input)
+    local delta = input.Position - dragStart
+    Frame.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
 end
 
--- Добавляем toggles
-local content = Instance.new("Frame")
-content.Size = UDim2.new(1, -20, 1, -70)
-content.Position = UDim2.new(0, 10, 0, 60)
-content.BackgroundTransparency = 1
-content.Parent = Frame
+Title.InputBegan:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+        dragging = true
+        dragStart = input.Position
+        startPos = Frame.Position
+        
+        input.Changed:Connect(function()
+            if input.UserInputState == Enum.UserInputState.End then
+                dragging = false
+            end
+        end)
+    end
+end)
 
-createToggle(content, "ESP", Settings.ESP, function(v) Settings.ESP = v end)
-createToggle(content, "Role Reveal", Settings.RoleESP, function(v) Settings.RoleESP = v end)
-createToggle(content, "Fling Mode", Settings.FlingEnabled, function(v) Settings.FlingEnabled = v end)
+Title.InputChanged:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then
+        dragInput = input
+    end
+end)
 
--- Fling Power Slider (простой)
+UserInputService.InputChanged:Connect(function(input)
+    if dragging and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
+        updateDrag(input)
+    end
+end)
+
+-- Toggle функция
+local function createToggle(parent, text, default, callback)
+    local toggle = Instance.new("TextButton")
+    toggle.Size = UDim2.new(1, -20, 0, 45)
+    toggle.BackgroundColor3 = default and Color3.fromRGB(0, 170, 0) or Color3.fromRGB(170, 0, 0)
+    toggle.Text = text .. ": " .. (default and "ON" or "OFF")
+    toggle.TextColor3 = Color3.new(1,1,1)
+    toggle.TextScaled = true
+    toggle.Font = Enum.Font.GothamSemibold
+    toggle.Parent = parent
+    
+    local corner = Instance.new("UICorner", toggle)
+    corner.CornerRadius = UDim.new(0, 8)
+    
+    toggle.MouseButton1Click:Connect(function()
+        default = not default
+        toggle.BackgroundColor3 = default and Color3.fromRGB(0, 170, 0) or Color3.fromRGB(170, 0, 0)
+        toggle.Text = text .. ": " .. (default and "ON" or "OFF")
+        callback(default)
+    end)
+end
+
+-- Контент
+local Scrolling = Instance.new("ScrollingFrame")
+Scrolling.Size = UDim2.new(1, -20, 1, -100)
+Scrolling.Position = UDim2.new(0, 10, 0, 55)
+Scrolling.BackgroundTransparency = 1
+Scrolling.ScrollBarThickness = 6
+Scrolling.Parent = Frame
+
+local UIList = Instance.new("UIListLayout")
+UIList.Padding = UDim.new(0, 8)
+UIList.Parent = Scrolling
+
+createToggle(Scrolling, "ESP", Settings.ESP, function(v) Settings.ESP = v end)
+createToggle(Scrolling, "Role Reveal", Settings.RoleESP, function(v) Settings.RoleESP = v end)
+createToggle(Scrolling, "Fling Mode", Settings.FlingEnabled, function(v) Settings.FlingEnabled = v end)
+
+-- Fling Power
 local powerLabel = Instance.new("TextLabel")
-powerLabel.Text = "Fling Power: " .. Settings.FlingPower
-powerLabel.Size = UDim2.new(1, 0, 0, 30)
+powerLabel.Size = UDim2.new(1, -20, 0, 40)
 powerLabel.BackgroundTransparency = 1
+powerLabel.Text = "Fling Power: " .. Settings.FlingPower
 powerLabel.TextColor3 = Color3.new(1,1,1)
-powerLabel.Parent = content
+powerLabel.TextScaled = true
+powerLabel.Parent = Scrolling
 
-local powerButton = Instance.new("TextButton")
-powerButton.Text = "+1000"
-powerButton.Size = UDim2.new(0.5, 0, 0, 30)
-powerButton.Position = UDim2.new(0, 0, 0, 40)
-powerButton.Parent = content
-powerButton.MouseButton1Click:Connect(function()
+-- Кнопка увеличения силы
+local plusBtn = Instance.new("TextButton")
+plusBtn.Size = UDim2.new(1, -20, 0, 40)
+plusBtn.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
+plusBtn.Text = "Увеличить силу (+1000)"
+plusBtn.TextColor3 = Color3.new(1,1,1)
+plusBtn.TextScaled = true
+plusBtn.Parent = Scrolling
+plusBtn.MouseButton1Click:Connect(function()
     Settings.FlingPower = Settings.FlingPower + 1000
     powerLabel.Text = "Fling Power: " .. Settings.FlingPower
 end)
 
 -- Список игроков
 local playerList = Instance.new("ScrollingFrame")
-playerList.Size = UDim2.new(1, 0, 0, 150)
-playerList.Position = UDim2.new(0, 0, 0, 100)
-playerList.BackgroundTransparency = 0.5
-playerList.ScrollBarThickness = 5
-playerList.Parent = content
+playerList.Size = UDim2.new(1, -20, 0, 140)
+playerList.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+playerList.Parent = Scrolling
 
-local uiList = Instance.new("UIListLayout")
-uiList.Parent = playerList
+local listLayout = Instance.new("UIListLayout", playerList)
+listLayout.Padding = UDim.new(0, 4)
 
 local function updatePlayerList()
     for _, child in ipairs(playerList:GetChildren()) do
@@ -121,14 +154,14 @@ local function updatePlayerList()
     for _, plr in ipairs(Players:GetPlayers()) do
         if plr \~= LocalPlayer then
             local btn = Instance.new("TextButton")
-            btn.Size = UDim2.new(1, 0, 0, 30)
+            btn.Size = UDim2.new(1, 0, 0, 35)
             btn.Text = plr.Name
-            btn.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+            btn.BackgroundColor3 = Color3.fromRGB(55, 55, 55)
             btn.TextColor3 = Color3.new(1,1,1)
             btn.Parent = playerList
             btn.MouseButton1Click:Connect(function()
                 Settings.SelectedPlayer = plr
-                print("Выбран для fling: " .. plr.Name)
+                print("Выбран: " .. plr.Name)
             end)
         end
     end
@@ -138,75 +171,69 @@ Players.PlayerAdded:Connect(updatePlayerList)
 Players.PlayerRemoving:Connect(updatePlayerList)
 updatePlayerList()
 
--- Кнопка Fling
+-- Fling кнопка
 local flingBtn = Instance.new("TextButton")
-flingBtn.Size = UDim2.new(1, -20, 0, 40)
-flingBtn.Position = UDim2.new(0, 10, 1, -50)
-flingBtn.BackgroundColor3 = Color3.fromRGB(200, 0, 0)
-flingBtn.Text = "FLING SELECTED"
+flingBtn.Size = UDim2.new(1, -20, 0, 50)
+flingBtn.Position = UDim2.new(0, 10, 1, -60)
+flingBtn.BackgroundColor3 = Color3.fromRGB(200, 30, 30)
+flingBtn.Text = "🚀 FLING SELECTED"
 flingBtn.TextColor3 = Color3.new(1,1,1)
 flingBtn.TextScaled = true
+flingBtn.Font = Enum.Font.GothamBold
 flingBtn.Parent = Frame
+
+local cornerFling = Instance.new("UICorner", flingBtn)
+cornerFling.CornerRadius = UDim.new(0, 10)
 
 flingBtn.MouseButton1Click:Connect(function()
     if Settings.SelectedPlayer and Settings.SelectedPlayer.Character then
         local root = Settings.SelectedPlayer.Character:FindFirstChild("HumanoidRootPart")
         if root then
             local bv = Instance.new("BodyVelocity")
-            bv.MaxForce = Vector3.new(math.huge, math.huge, math.huge)
-            bv.Velocity = Vector3.new(math.random(-Settings.FlingPower, Settings.FlingPower), Settings.FlingPower / 2, math.random(-Settings.FlingPower, Settings.FlingPower))
+            bv.MaxForce = Vector3.new(1e5, 1e5, 1e5)
+            bv.Velocity = Vector3.new(math.random(-Settings.FlingPower, Settings.FlingPower), Settings.FlingPower*0.6, math.random(-Settings.FlingPower, Settings.FlingPower))
             bv.Parent = root
-            game:GetService("Debris"):AddItem(bv, 0.5)
-            print("Flinged " .. Settings.SelectedPlayer.Name)
+            game:GetService("Debris"):AddItem(bv, 0.6)
         end
-    else
-        print("Сначала выбери игрока из списка!")
     end
 end)
 
--- ESP функция (улучшенная)
-local function createESP(plr)
-    if plr == LocalPlayer then return end
-    local char = plr.Character
-    if not char or not char:FindFirstChild("Head") then return end
-    
-    local bill = Instance.new("BillboardGui")
-    bill.Adornee = char.Head
-    bill.AlwaysOnTop = true
-    bill.Size = UDim2.new(0, 200, 0, 60)
-    bill.StudsOffset = Vector3.new(0, 4, 0)
-    bill.Parent = ESPFolder
-    
-    local txt = Instance.new("TextLabel", bill)
-    txt.Size = UDim2.new(1,0,1,0)
-    txt.BackgroundTransparency = 1
-    txt.TextStrokeTransparency = 0
-    txt.TextScaled = true
-    txt.Font = Enum.Font.GothamBold
-    
-    local function update()
-        if not char:FindFirstChild("Humanoid") then return end
-        local role = "Innocent"
-        local color = Color3.new(1,1,1)
-        if char:FindFirstChild("Knife") then
-            role = "🔪 MURDERER"
-            color = Color3.new(1,0,0)
-        elseif char:FindFirstChild("Gun") then
-            role = "🔫 SHERIFF"
-            color = Color3.new(0,1,0)
-        end
-        txt.Text = plr.Name .. "\n" .. role
-        txt.TextColor3 = color
-    end
-    update()
-    RunService.Heartbeat:Connect(update)
-end
+-- ESP (упрощённый и стабильный)
+local ESPFolder = Instance.new("Folder", CoreGui)
+ESPFolder.Name = "MM2_ESP"
 
 RunService.RenderStepped:Connect(function()
     if Settings.ESP then
         for _, plr in ipairs(Players:GetPlayers()) do
-            if plr.Character and not ESPFolder:FindFirstChild(plr.Name .. "_ESP") then
-                local esp = createESP(plr)
+            if plr.Character and plr.Character:FindFirstChild("Head") then
+                local head = plr.Character.Head
+                if not ESPFolder:FindFirstChild(plr.Name) then
+                    local bill = Instance.new("BillboardGui")
+                    bill.Name = plr.Name
+                    bill.Adornee = head
+                    bill.AlwaysOnTop = true
+                    bill.Size = UDim2.new(0, 180, 0, 50)
+                    bill.StudsOffset = Vector3.new(0, 3, 0)
+                    bill.Parent = ESPFolder
+                    
+                    local txt = Instance.new("TextLabel", bill)
+                    txt.Size = UDim2.new(1,0,1,0)
+                    txt.BackgroundTransparency = 1
+                    txt.TextStrokeTransparency = 0
+                    txt.TextScaled = true
+                    txt.Font = Enum.Font.GothamBold
+                    txt.TextColor3 = Color3.new(1,1,1)
+                    
+                    spawn(function()
+                        while bill.Parent do
+                            local role = "Innocent"
+                            if plr.Character:FindFirstChild("Knife") then role = "🔪 MURDER" 
+                            elseif plr.Character:FindFirstChild("Gun") then role = "🔫 SHERIFF" end
+                            txt.Text = plr.Name .. "\n" .. role
+                            wait(0.5)
+                        end
+                    end)
+                end
             end
         end
     else
@@ -214,5 +241,4 @@ RunService.RenderStepped:Connect(function()
     end
 end)
 
-print("✅ MM2 Menu + Fling загружен!")
-print("Используй GUI для управления. Выбирай игроков и fling'и их!")
+print("✅ MM2 Mobile Menu загружен! Тащи за заголовок.")
