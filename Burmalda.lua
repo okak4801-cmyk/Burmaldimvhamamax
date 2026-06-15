@@ -1,10 +1,10 @@
- -- MM2 Mobile Script v3 - Fixed GUI + Chat Toggle
+-- MM2 Mobile Script v4 - Автоматическое меню (для русских)
 local Players = game:GetService("Players")
 local LocalPlayer = Players.LocalPlayer
 local RunService = game:GetService("RunService")
 local UserInputService = game:GetService("UserInputService")
 
-local PlayerGui = LocalPlayer:WaitForChild("PlayerGui", 10)
+local PlayerGui = LocalPlayer:WaitForChild("PlayerGui")
 
 local Settings = {
     ESP = true,
@@ -14,9 +14,9 @@ local Settings = {
     SelectedPlayer = nil
 }
 
--- Создаём GUI
+-- GUI
 local ScreenGui = Instance.new("ScreenGui")
-ScreenGui.Name = "MM2_Menu_Fixed"
+ScreenGui.Name = "MM2_Menu"
 ScreenGui.ResetOnSpawn = false
 ScreenGui.Parent = PlayerGui
 
@@ -33,7 +33,7 @@ Instance.new("UICorner", Frame).CornerRadius = UDim.new(0, 16)
 local Title = Instance.new("TextLabel")
 Title.Size = UDim2.new(1, 0, 0, 55)
 Title.BackgroundColor3 = Color3.fromRGB(10, 10, 15)
-Title.Text = "MM2 Mobile Menu"
+Title.Text = "MM2 Скрипт (Мобильный)"
 Title.TextColor3 = Color3.new(1,1,1)
 Title.TextScaled = true
 Title.Font = Enum.Font.GothamBold
@@ -90,8 +90,8 @@ local layout = Instance.new("UIListLayout", Scroll)
 layout.Padding = UDim.new(0, 12)
 
 createToggle(Scroll, "ESP", Settings.ESP, function(v) Settings.ESP = v end)
-createToggle(Scroll, "Role Reveal", Settings.RoleESP, function(v) Settings.RoleESP = v end)
-createToggle(Scroll, "Fling Mode", Settings.FlingEnabled, function(v) Settings.FlingEnabled = v end)
+createToggle(Scroll, "Показ роли", Settings.RoleESP, function(v) Settings.RoleESP = v end)
+createToggle(Scroll, "Режим Fling", Settings.FlingEnabled, function(v) Settings.FlingEnabled = v end)
 
 -- Fling Power
 local powerLbl = Instance.new("TextLabel", Scroll)
@@ -99,7 +99,7 @@ powerLbl.Size = UDim2.new(1, -30, 0, 45)
 powerLbl.BackgroundTransparency = 1
 powerLbl.TextColor3 = Color3.new(1,1,1)
 powerLbl.TextScaled = true
-powerLbl.Text = "Сила: " .. Settings.FlingPower
+powerLbl.Text = "Сила подброса: " .. Settings.FlingPower
 
 local plus = Instance.new("TextButton", Scroll)
 plus.Size = UDim2.new(1, -30, 0, 45)
@@ -111,7 +111,7 @@ Instance.new("UICorner", plus).CornerRadius = UDim.new(0,12)
 
 plus.MouseButton1Click:Connect(function()
     Settings.FlingPower += 1000
-    powerLbl.Text = "Сила: " .. Settings.FlingPower
+    powerLbl.Text = "Сила подброса: " .. Settings.FlingPower
 end)
 
 -- Player List
@@ -121,8 +121,9 @@ plrScroll.BackgroundColor3 = Color3.fromRGB(30,30,30)
 Instance.new("UICorner", plrScroll).CornerRadius = UDim.new(0,10)
 
 local function refreshPlayers()
-    -- очистка и обновление списка...
-    for _,c in ipairs(plrScroll:GetChildren()) do if c:IsA("TextButton") then c:Destroy() end end
+    for _,c in ipairs(plrScroll:GetChildren()) do 
+        if c:IsA("TextButton") then c:Destroy() end 
+    end
     for _,p in ipairs(Players:GetPlayers()) do
         if p \~= LocalPlayer then
             local btn = Instance.new("TextButton")
@@ -147,7 +148,7 @@ local flingBtn = Instance.new("TextButton")
 flingBtn.Size = UDim2.new(1, -20, 0, 60)
 flingBtn.Position = UDim2.new(0,10,1,-70)
 flingBtn.BackgroundColor3 = Color3.fromRGB(220, 30, 30)
-flingBtn.Text = "🚀 FLING"
+flingBtn.Text = "🚀 ПОДБРОСИТЬ"
 flingBtn.TextScaled = true
 flingBtn.Font = Enum.Font.GothamBold
 flingBtn.TextColor3 = Color3.new(1,1,1)
@@ -167,13 +168,15 @@ flingBtn.MouseButton1Click:Connect(function()
     end
 end)
 
--- ESP (оставил как было)
+-- ESP
 local ESPFolder = Instance.new("Folder", ScreenGui)
 ESPFolder.Name = "ESP"
 
 RunService.RenderStepped:Connect(function()
-    if not Settings.ESP then ESPFolder:ClearAllChildren() return end
-    -- ... (ESP код без изменений)
+    if not Settings.ESP then 
+        ESPFolder:ClearAllChildren() 
+        return 
+    end
     for _, plr in ipairs(Players:GetPlayers()) do
         if plr.Character and plr.Character:FindFirstChild("Head") and not ESPFolder:FindFirstChild(plr.Name) then
             local bill = Instance.new("BillboardGui", ESPFolder)
@@ -203,12 +206,11 @@ RunService.RenderStepped:Connect(function()
     end
 end)
 
-print("✅ v3 Загружено! Если меню не видно — напиши в чат: /menu")
+print("✅ MM2 Скрипт загружен! Меню должно быть видно сразу.")
 
--- Команда в чат для показа/скрытия
+-- Альтернативный способ скрыть/показать (нажми кнопку "Меню" если не видно)
 LocalPlayer.Chatted:Connect(function(msg)
-    if msg:lower() == "/menu" then
+    if msg:lower() == "/м" or msg == "меню" then
         Frame.Visible = not Frame.Visible
-        print("Меню " .. (Frame.Visible and "показано" or "скрыто"))
     end
 end)
